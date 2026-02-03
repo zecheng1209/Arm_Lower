@@ -42,10 +42,12 @@ typedef enum {
 //    stop,         // 停止
 //    error         // 错误状态
 } STATE;
-STATE task_state = init;  // 02位置有要求，以近似初始化位置进行初始化，且初始状态需为该项，02会根据不同的初始位置定义不同的角度
+STATE task_state = init;         // 02位置有要求，以近似初始化位置进行初始化，且初始状态需为该项，
+                                 // 02会根据不同的初始位置定义不同的角度！！！
 //STATE task_state = moving1;
 //STATE task_state = moving2;
 //STATE task_state = moving3;
+
 
 void rs02_PID_Init() {
   
@@ -99,15 +101,15 @@ void Motor_Drive(void *param)
                 RampToTarget(&rs02_rad, 0.3f, 0.01f); // 使用RampToTarget平滑过渡到目标位置
                 RampToTarget(&rs03_rad, 4.17f, 0.01f);
                 break;
-            case moving1:
+            case moving1:                            //行进
                 RampToTarget(&rs02_rad, -1.7f, 0.01f);
                 RampToTarget(&rs03_rad, 4.6f, 0.01f);
                 break;
-            case moving2:
+            case moving2:                            //抓杆
                 RampToTarget(&rs02_rad, 1.27f, 0.01f);
                 RampToTarget(&rs03_rad, 4.35f, 0.01f);
                 break;
-            case moving3:
+            case moving3:                            //对接
                 RampToTarget(&rs02_rad, -0.25f, 0.01f);
                 RampToTarget(&rs03_rad, 4.68f, 0.01f);
                 break;
@@ -184,17 +186,17 @@ void Motor_RM(void *param)
                 RampToTarget(&Expect_2006, 0.0f, 1.0f);
                 break;
                                                       //前几个状态无需3508和2006改变位置
-            case moving1:
+            case moving1:                             //行进
                 RampToTarget(&Expect_3508, 0.0f, 1.0f);
                 RampToTarget(&Expect_2006, 0.0f, 1.0f);
                 break;
 
-            case moving2:
+            case moving2:                             //抓杆
                 RampToTarget(&Expect_3508, 0.0f, 1.0f);
                 RampToTarget(&Expect_2006, 0.0f, 1.0f);
                 break;
 
-            case moving3:
+            case moving3:                             //对接
                 RampToTarget(&Expect_3508, -39000.0f, 80.0f);
                 RampToTarget(&Expect_2006, 0.0f, 1.0f);
                 break;
