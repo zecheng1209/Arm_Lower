@@ -1,11 +1,11 @@
 #include "infrared.h"
 #include "stm32f4xx_hal.h"
+#include <string.h>
 
 // 定时器句柄，假设已经通过CubeMX配置好TIM1
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim2;
-
-// 接收的数据缓冲区（9 字节：8 字节数据 + 1 字节 CRC）
+// 接收8+1字节数据
 uint8_t received_data[9];
 uint8_t bit_index = 0;  // 当前接收的 bit 序号（0-71）
 uint32_t last_capture_time = 0;  // 用于计算时间差
@@ -21,35 +21,33 @@ void IR_Init(void)
     HAL_TIM_IC_Start_IT(&htim2, IC_CHANNEL);
 }
 
-// 发送数据（带CRC校验）
+//发送数据
 void IR_SendData(uint8_t *data, uint8_t length)
 {
-    uint8_t crc = IR_CRC8(data, length); // 计算CRC校验
+    if (length > 8) return; // 限制最大8字节数据
 
-    // 发送起始信号
+    // 1. 计算CRC
+    uint8_t crc = IR_CRC8(data, length);
+
+    // 2. 整合数据和CRC到一个9字节的缓冲区
+    uint8_t frame[9];
+    memcpy(frame, data, length);       // length是数据长度8
+    frame[8] = crc;                    // 第9字节是CRC
+
+    // 3. 发送起始信号
     IR_GeneratePulse(START_PULSE_LEN, START_SPACE_LEN);
-    
-    // 发送数据（8位数据+CRC）
-    for (int i = 0; i < length; i++) {
-        for (int j = 7; j >= 0; j--) {
-            if ((data[i] >> j) & 0x01) {
-                IR_GeneratePulse(BIT_ONE_HIGH, BIT_ONE_LOW);  // 发送1
+
+    // 4. 发送整个9字节帧（数据+CRC）
+    for (int i = 0; i < 9; i++) {
+        for (int j = 7; j >= 0; j--) { // 高位先发送
+            if ((frame[i] >> j) & 0x01) {
+                IR_GeneratePulse(BIT_ONE_HIGH, BIT_ONE_LOW);
             } else {
-                IR_GeneratePulse(BIT_ZERO_HIGH, BIT_ZERO_LOW);  // 发送0
+                IR_GeneratePulse(BIT_ZERO_HIGH, BIT_ZERO_LOW);
             }
         }
     }
-
-    // 发送CRC（1字节）
-    for (int i = 7; i >= 0; i--) {
-        if ((crc >> i) & 0x01) {
-            IR_GeneratePulse(BIT_ONE_HIGH, BIT_ONE_LOW);  // 发送1
-        } else {
-            IR_GeneratePulse(BIT_ZERO_HIGH, BIT_ZERO_LOW);  // 发送0
-        }
-    }
 }
-
 // 生成脉冲
 void IR_GeneratePulse(uint16_t high_time, uint16_t low_time)
 {

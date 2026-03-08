@@ -2,6 +2,7 @@
 #define __INFRARED_H
 
 #include "stm32f4xx_hal.h"
+#include <string.h>
 
 // 红外时序定义
 #define IR_FREQUENCY   38000
