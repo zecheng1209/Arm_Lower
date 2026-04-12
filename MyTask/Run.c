@@ -2,6 +2,7 @@
 #include "usb_trans.h"
 #include "usbd_cdc_if.h"
 #include "PID.h"
+#include "infrared_host.h"
 extern uint8_t ready;
 
 Joint_t Joint[5];
@@ -16,7 +17,7 @@ RobStride_t rs03={.hcan=&hcan2,.motor_id=0x02,.type= RobStride_03 };
 
 float rs03_torque=-0.0f,rs03_rad=-0.2f,rs03_omega=0.2f;
 float rs03_kp=350.0f,rs03_kd=38.0f;
-PID rs03_pos_pid;  // Î»ÖÃ»·PID
+PID rs03_pos_pid;  // Î»ï¿½Ã»ï¿½PID
 
 
 
@@ -112,7 +113,7 @@ void CDC_Recv_Cb(uint8_t *src, uint16_t size)
 	}
 }
 
-void MotorSendTask(void *param)// ½«µç»úµÄÊý¾Ý·¢ËÍµ½PCÉÏ
+void MotorSendTask(void *param)// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý·ï¿½ï¿½Íµï¿½PCï¿½ï¿½
 {
 	TickType_t Last_wake_time = xTaskGetTickCount();
 	USB_CDC_Init(CDC_Recv_Cb, NULL, NULL);
@@ -137,7 +138,7 @@ void MotorSendTask(void *param)// ½«µç»úµÄÊý¾Ý·¢ËÍµ½PCÉÏ
 
 uint8_t count = 0; 
 TaskHandle_t MotorRecTask_Handle;
-void MotorRecTask(void *param)// ´ÓPC½ÓÊÕµç»úµÄÆÚÍûÖµ
+void MotorRecTask(void *param)// ï¿½ï¿½PCï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
 {
 	TickType_t last_wake_time = xTaskGetTickCount();
 
@@ -170,7 +171,15 @@ void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan)
 		uint16_t ID;
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	//if (hcan->Instance == CAN2)
+	if (hcan->Instance == CAN1)
+	{
+		uint8_t rx_data[8];
+		CAN_RxHeaderTypeDef rx_header;
+		if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header, rx_data) == HAL_OK) {
+			IR_Host_ProcessRxFrame(&rx_header, rx_data);
+		}
+	}
+	else if (hcan->Instance == CAN2)
 	{
 		uint8_t buf[8];
 		ID = CAN_Receive_DataFrame(&hcan2, buf);

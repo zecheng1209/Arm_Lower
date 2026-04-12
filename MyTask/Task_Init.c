@@ -5,6 +5,7 @@
 #include "Run.h"
 #include "math.h"
 #include "stdbool.h"
+#include "infrared_host.h"
 
 extern Joint_t Joint[5];
 float Motor_Init[4] = {0};
@@ -13,6 +14,7 @@ extern TaskHandle_t Motor_Drive_Handle;
 extern TaskHandle_t MotorSendTask_Handle;
 extern TaskHandle_t MotorRecTask_Handle;
 TaskHandle_t Motor_Reset_Handle;
+TaskHandle_t IR_Host_Task_Handle;
 
 void MotorInit(void);
 void Motor_reset(void *param);
@@ -49,6 +51,8 @@ void Task_Init(void)
     HAL_CAN_ActivateNotification(&hcan1,CAN_IT_TX_MAILBOX_EMPTY);
     HAL_CAN_ActivateNotification(&hcan2,CAN_IT_TX_MAILBOX_EMPTY);
 
+	IR_Host_Init();
+
 	RobStrideInit(&rs03, &hcan2, 0x02, RobStride_03);
 	RobStrideSetMode(&rs03, RobStride_MotionControl);
 	//vTaskDelay(100);
@@ -58,6 +62,7 @@ void Task_Init(void)
     //MotorInit();
     
 	xTaskCreate(Motor_Drive, "Motor_Drive", 628, NULL, 4, &Motor_Drive_Handle);//驱动
+	xTaskCreate(IR_Host_Task, "IR_Host_Task", 512, NULL, 3, &IR_Host_Task_Handle);//红外上位机
 	//	xTaskCreate(Motor_reset, "Motor_reset", 300, NULL, 4, &Motor_Reset_Handle);//复位
     //xTaskCreate(MotorSendTask, "MotorSendTask", 128, NULL, 4, &MotorSendTask_Handle);//将数据发送到PC
 
